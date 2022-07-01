@@ -95,7 +95,7 @@ delta1 = 0.01;
 
 % Grid of points to evaluate skewed t-density
 delta = 0.1;
-YY = [-200:delta:200];
+YY = [-20:delta:20];
 
 %% Fit skewed t-distribution to unconditional quantiles
 qqTarg = YQunc;
@@ -135,7 +135,7 @@ for jt = 1:size(YQ,1)
         %%% NOTE: here I no longer use previously estimated parameters as
         %%%       initial conditions
         %if jt<=5 || mod(jt,4)==0
-            %[lc,sc,sh,df]  = QuantilesInterpolation(qqTarg,QQ);
+            [lc,sc,sh,df]  = QuantilesInterpolation(qqTarg,QQ);
         %else
         %    [lc,sc,sh,df]  = QuantilesInterpolation(qqTarg,QQ,lc0,sc0,sh0,df0);
         %end
@@ -168,6 +168,8 @@ for jt = 1:size(YQ,1)
         
         qqTemp = qskt([1-delta1:-delta1:1-alpha], STpar(jt,1), STpar(jt,2), STpar(jt,3), STpar(jt,4));
         EljST(jt,:) = 1/alpha * sum(qqTemp * delta1);
+        
+        disp(jt);
     end
 end
 

@@ -32,18 +32,17 @@ end
 
 % Should saved density matching results be loaded?
 % Or should density matching be reperformed?
-loadSavedResults = false;
+loadSavedResults = true;
 
 %% Load data and fix forecast settings
-load Backup_Backup;
-period_numeric = datenum(period_array);
+load DataVulnerability;
 % Use 1973Q1-2015Q4 subsample
 jtFirst = 1;    % 2005Q1
-jtLast  = 69;  % 2022Q2
-period_numeric = period_numeric(jtFirst:jtLast);
-main_array = main_array(jtFirst:jtLast, :);
+jtLast  = 911;  % 2022Q2
+Time = Time(jtFirst:jtLast);
+X = X(jtFirst:jtLast, :);
 clear('jtFirst', 'jtLast')
-[T, n] = size(main_array);
+[T, n] = size(X);
 
 % Forecast settings
 H = [1, 4];          % Horizons to forecast (# of quarters ahead)
@@ -56,20 +55,28 @@ QQ = 0.05:0.05:0.95; % Quantiles to estimate in quantile regressions
 [~, jq95] = min(abs(QQ - 0.95));
 
 % Construct average growth rates
-y = main_array(:, strcmp(Mnem, 'A191RL1Q225SBEA'));
+y = X(:, strcmp(Mnem, 'A191RL1Q225SBEA'));
 for h = 1:4
     Yh(:, h) = filter(ones(1, h)/h, 1, y);
     Yh(1:(h - 1), h) = NaN;
 end
 
+%Dates for which you want to plot the density
+JT = [134; 144; 168;];  % 2006Q2; 2008Q4; 2014Q4
+    
+% axis limits for various plots (these are horizon-dependent)
+ylimsPredictedDistribution = [
+    -15,  20;
+	NaN, NaN;
+	NaN, NaN;
+	-15,  20;
+    ];
 
 %% Main results
 % Estimate quantile regressions (for all quantiles and forecast horizons)
-ResMain    = QRboot(main_array(:, strcmp(Mnem, 'KK')), y, H, 1, QQ);
+ResMain    = QRboot(X(:, strcmp(Mnem, 'KK')), y, H, 1, QQ);
 ResGDPonly = QRboot([], y, H, 1, QQ);
 ResUnc     = QRboot([], y, H, 0, QQ);
-
-
 
 % Loop over forecast horizons
 for h = H
@@ -83,7 +90,7 @@ for h = H
         
     %% Fit skewed-t densities to estimated quantiles OR load saved results
     if loadSavedResults
-        filename = ['ResMatch_H', num2str(h), '.mat'];
+        filename = ['ResMatch_I', num2str(h), '.mat'];
         disp(['Loading saved density matching results from file ', filename])
         load(filename)
         clear('filename')
@@ -94,18 +101,18 @@ for h = H
         ResMatchGDPonly = Step2match(YQGDPonly, YQunc, QQ);
 
         % Save results to .mat file
-        filename = ['ResMatch_G', num2str(h), '.mat'];
-        disp(['Saving results to file ', filename])
+        filename = ['ResMatch_I', num2str(h), '.mat'];
+        disp(['Saving results to file ',  filename])
         save(filename, 'ResMatch', 'ResMatchGDPonly')
         clear('filename')
     end
     %% 3D density plot
     f = figure;
-    meshc(period_numeric, ResMatch.YY', ResMatch.PST')
+    meshc(Time, ResMatch.YY', ResMatch.PST')
     datetick('x', 'yyyy')
     view(85, 50)
     set(gca, 'YLim', [-20, 20])
-    set(gca, 'XLim', [period_numeric(1), period_numeric(end)])
+    set(gca, 'XLim', [Time(1), Time(end)])
     xlabel('Year')
     filename = fullfile(FigSubFolder, ['Dens3D_G', num2str(h), '.pdf']);
     printpdf(f, filename);
