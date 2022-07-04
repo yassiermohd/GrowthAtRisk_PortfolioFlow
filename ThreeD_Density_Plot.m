@@ -37,15 +37,15 @@ loadSavedResults = true;
 %% Load data and fix forecast settings
 load DataVulnerability;
 % Use 1973Q1-2015Q4 subsample
-jtFirst = 1;    % 2005Q1
-jtLast  = 911;  % 2022Q2
+jtFirst = 1;    % 1973Q1
+jtLast  = 911;  % 2015Q4
 Time = Time(jtFirst:jtLast);
 X = X(jtFirst:jtLast, :);
 clear('jtFirst', 'jtLast')
 [T, n] = size(X);
 
 % Forecast settings
-H = [1, 4];          % Horizons to forecast (# of quarters ahead)
+H = [1, 4];          % Horizons to forecast (# of quarters ahead) CHANGE HERE
 QQ = 0.05:0.05:0.95; % Quantiles to estimate in quantile regressions
 % Indices for selected quantiles
 [~, jq05] = min(abs(QQ - 0.05));
@@ -78,8 +78,9 @@ ResMain    = QRboot(X(:, strcmp(Mnem, 'KK')), y, H, 1, QQ);
 ResGDPonly = QRboot([], y, H, 1, QQ);
 ResUnc     = QRboot([], y, H, 0, QQ);
 
+
 % Loop over forecast horizons
-for h = H
+for h = 1
     % Get quantiles of predictive distribution
     YQunc     = ResUnc.YQ(end, :, h);
     YQ        = ResMain.YQ(:, :, h);
@@ -102,20 +103,23 @@ for h = H
 
         % Save results to .mat file
         filename = ['ResMatch_I', num2str(h), '.mat'];
-        disp(['Saving results to file ',  filename])
+        disp(['Saving results to file ', filename])
         save(filename, 'ResMatch', 'ResMatchGDPonly')
         clear('filename')
     end
     %% 3D density plot
     f = figure;
-    meshc(Time, ResMatch.YY', ResMatch.PST')
+    mesh(Time, ResMatch.YY', ResMatch.PST')
     datetick('x', 'yyyy')
     view(85, 50)
     set(gca, 'YLim', [-20, 20])
     set(gca, 'XLim', [Time(1), Time(end)])
-    xlabel('Year')
-    filename = fullfile(FigSubFolder, ['Dens3D_G', num2str(h), '.pdf']);
+    
+    zlabel('Probability')
+    ylabel("Net Portfolio Inflows (USD bn)")
+    filename = fullfile(FigSubFolder, ['Dens3D_H', num2str(h), '.pdf']);
     printpdf(f, filename);
     clear('f', 'filename')
 end
-
+    
+   
